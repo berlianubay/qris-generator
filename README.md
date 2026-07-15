@@ -20,3 +20,13 @@ Situs statis tanpa build:
 
 ## Catatan
 Data merchant asli pada QRIS tidak diubah — hanya mode, nominal, dan CRC. Nama toko bersifat label tampilan/PDF.
+
+## Lisensi & kredit
+
+**Gratis untuk UMKM** — pakai sepuasnya tanpa biaya.
+
+Kode sumber terbuka di bawah **Lisensi MIT dengan syarat atribusi terlihat** (lihat [LICENSE](LICENSE)). Developer boleh menyalin, mengubah, dan menyebarkan ulang, dengan syarat:
+- menyertakan teks hak cipta & lisensi, dan
+- **kredit "Dibuat oleh Bermuda Lentera" ([github.com/berlianubay](https://github.com/berlianubay)) harus tetap terlihat** di tampilan aplikasi (tidak boleh dihapus).
+
+© 2026 Bermuda Lentera (github.com/berlianubay)
