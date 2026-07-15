@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4F46E5">
+<title>QRIS Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#EEF0F6; --card:#FFFFFF; --ink:#191A2C; --muted:#6B6E85;
+    --line:#E1E3EF; --brand:#4F46E5; --brand-dk:#3730A3; --brand-soft:#EEEDFE;
+    --ok:#0D7C6B; --ok-soft:#E1F0EC; --amber:#B45309;
+    --shadow:0 1px 2px rgba(25,26,44,.06),0 8px 24px rgba(25,26,44,.07);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:"Plus Jakarta Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  .app{max-width:540px;margin:0 auto;min-height:100vh}
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--brand),var(--brand-dk));color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 16px;border-radius:0 0 22px 22px;box-shadow:0 6px 20px rgba(55,48,163,.28)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.2px}
+  .brand .dot{width:22px;height:22px;border-radius:7px;background:#fff;display:grid;place-items:center;color:var(--brand);font-size:12px;font-weight:800}
+  .brand .sp{flex:1}
+  .store-name{margin-top:12px;font-size:13px;opacity:.9;font-weight:600;display:flex;align-items:center;gap:6px}
+  main{padding:16px 16px 8px}
+  .section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:4px 2px 10px;display:flex;justify-content:space-between;align-items:center}
+  .section-title a{color:var(--brand-dk);font-weight:700;text-transform:none;letter-spacing:0;cursor:pointer;font-size:12px}
+  /* Amount display */
+  .amount-disp{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:20px;text-align:center;margin-bottom:14px}
+  .amount-disp .lbl{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .amount-disp .val{font-size:38px;font-weight:800;letter-spacing:-1px;margin-top:6px;color:var(--ink)}
+  .amount-disp .val small{font-size:20px;color:var(--muted);font-weight:700;margin-right:4px}
+  /* Keypad */
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .keypad button{border:none;background:var(--card);box-shadow:var(--shadow);border-radius:15px;padding:18px 0;font-family:inherit;font-size:24px;font-weight:700;color:var(--ink);cursor:pointer;transition:transform .06s}
+  .keypad button:active{transform:scale(.95);background:var(--brand-soft)}
+  .keypad button.act{color:var(--brand-dk);font-size:20px}
+  .btn{width:100%;border:none;border-radius:14px;padding:16px;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:11px}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:disabled{opacity:.45;cursor:not-allowed}
+  .btn.soft{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+  .btn.ghost{background:transparent;color:var(--brand-dk);box-shadow:none}
+  .info{background:var(--brand-soft);color:var(--brand-dk);border-radius:13px;padding:13px 15px;font-size:13px;line-height:1.5;margin-bottom:14px}
+  .info.warn{background:#FBEEE1;color:var(--amber)}
+  .info.ok{background:var(--ok-soft);color:var(--ok)}
+  .row{background:var(--card);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;margin-bottom:9px;box-shadow:var(--shadow)}
+  .row .tag{width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;font-size:17px;background:var(--brand-soft);color:var(--brand-dk)}
+  .row .mid{flex:1;min-width:0}
+  .row .nm{font-weight:700;font-size:15px}
+  .row .meta{font-size:12px;color:var(--muted);margin-top:1px}
+  .row .amt{font-weight:800;font-size:15px;color:var(--brand-dk);white-space:nowrap}
+  .empty{text-align:center;padding:44px 24px;color:var(--muted)}
+  .empty .em{font-size:38px;margin-bottom:8px}
+  .empty b{color:var(--ink);display:block;margin-bottom:4px;font-size:16px}
+  .pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--ok-soft);color:var(--ok)}
+  .pill.soon{background:#FBE3DA;color:#B4380C}
+  label.fld{display:block;margin-bottom:13px}
+  .fld .t{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block}
+  .inp{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 13px;font-family:inherit;font-size:16px;color:var(--ink);background:#fff;outline:none}
+  .inp:focus{border-color:var(--brand)}
+  textarea.inp{resize:none;min-height:70px;font-size:12px;font-family:ui-monospace,monospace}
+  .upload{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1.5px dashed var(--line);background:#fff;border-radius:12px;padding:18px;font-family:inherit;font-weight:700;font-size:14px;color:var(--brand-dk);cursor:pointer;margin-bottom:11px}
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 8px calc(8px + env(safe-area-inset-bottom));max-width:540px;margin:0 auto}
+  nav button{flex:1;border:none;background:none;font-family:inherit;color:var(--muted);font-size:11px;font-weight:600;padding:6px 4px;cursor:pointer;border-radius:12px}
+  nav button .ic{font-size:20px;display:block;margin-bottom:2px}
+  nav button.on{color:var(--brand)}
+  .scrim{position:fixed;inset:0;background:rgba(15,12,40,.55);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;max-width:540px;margin:0 auto;background:var(--card);border-radius:22px 22px 0 0;padding:8px 18px calc(22px + env(safe-area-inset-bottom));transform:translateY(102%);transition:transform .26s cubic-bezier(.32,.72,0,1);max-height:94vh;overflow:auto}
+  .sheet.show{transform:translateY(0)}
+  .handle{width:40px;height:4px;background:var(--line);border-radius:99px;margin:8px auto 14px}
+  .sheet h3{margin:0 0 4px;font-size:18px;font-weight:800;letter-spacing:-.3px;text-align:center}
+  /* QR slip */
+  .qr-card{border:1.5px solid var(--line);border-radius:18px;padding:18px;text-align:center;margin:6px 0 14px}
+  .qr-card .store{font-size:16px;font-weight:800}
+  .qr-card .nmid{font-size:11px;color:var(--muted);margin-top:1px}
+  .qr-card .amt{font-size:30px;font-weight:800;letter-spacing:-.5px;color:var(--brand-dk);margin:10px 0}
+  .qr-card .qrbox{display:flex;justify-content:center;padding:8px}
+  .qr-card .qrbox img,.qr-card .qrbox canvas{width:230px;height:230px;image-rendering:pixelated}
+  .qr-card .scan{font-size:12px;color:var(--muted);margin-top:6px;font-weight:600}
+  .qr-brand{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:11px;font-weight:800;color:var(--brand)}
+  .toast{position:fixed;bottom:calc(150px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:600;z-index:60;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;box-shadow:var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="dot">Q</span> QRIS Generator <span class="sp"></span>
+      <button class="btn ghost" style="width:auto;margin:0;padding:6px 8px;color:#fff;background:rgba(255,255,255,.16);border-radius:10px" onclick="app.tab('setelan')">☰</button>
+    </div>
+    <div class="store-name" id="hStore">🏬 Belum ada nama toko</div>
+  </header>
+
+  <main>
+    <!-- TAB: Bayar -->
+    <section id="tab-bayar">
+      <div id="noQrisNote" class="info warn hide">⚠️ Belum ada QRIS statis. Buka <b>Setelan</b> untuk mengunggah QRIS statis toko Anda dulu.</div>
+      <div class="amount-disp">
+        <div class="lbl">Nominal pembayaran</div>
+        <div class="val" id="amtDisp"><small>Rp</small>0</div>
+      </div>
+      <div class="keypad" id="keypad"></div>
+      <button class="btn primary" id="genBtn" onclick="app.generate()">Buat QRIS Dinamis</button>
+    </section>
+
+    <!-- TAB: Riwayat -->
+    <section id="tab-riwayat" class="hide">
+      <div class="section-title">Riwayat transaksi
+        <a id="pdfLink" onclick="app.cetakRiwayatPDF()">🧾 Cetak PDF</a>
+      </div>
+      <div class="info warn">⏳ Riwayat otomatis terhapus setelah <b>1 hari</b> agar hemat memori. Cetak PDF bila ingin menyimpannya.</div>
+      <div id="riwayatList"></div>
+    </section>
+
+    <!-- TAB: Setelan -->
+    <section id="tab-setelan" class="hide">
+      <div class="section-title">Nama toko / organisasi</div>
+      <label class="fld"><input class="inp" id="sStore" placeholder="mis. Toko Berkah Jaya" oninput="app.saveStore(this.value)"></label>
+
+      <div class="section-title">QRIS statis</div>
+      <div id="qrisStatus"></div>
+      <input type="file" id="fileImg" accept="image/*" class="hide" onchange="app.uploadImage(event)">
+      <button class="upload" onclick="document.getElementById('fileImg').click()">📷 Unggah gambar QRIS statis</button>
+      <label class="fld"><span class="t">atau tempel kode QRIS (teks diawali 000201…)</span>
+        <textarea class="inp" id="sPayload" placeholder="00020101021126…"></textarea>
+      </label>
+      <button class="btn soft" onclick="app.usePasted()">Gunakan kode yang ditempel</button>
+      <div class="info">QRIS statis diubah menjadi dinamis sesuai nominal: mode diubah ke sekali-pakai (tag 01→12), nominal disisipkan (tag 54), dan CRC dihitung ulang. Data merchant asli tidak diubah.</div>
+      <button class="btn ghost" onclick="app.resetAll()">Hapus semua data</button>
+    </section>
+  </main>
+</div>
+
+<nav>
+  <button class="on" id="nav-bayar" onclick="app.tab('bayar')"><span class="ic">⌨️</span>Bayar</button>
+  <button id="nav-riwayat" onclick="app.tab('riwayat')"><span class="ic">🕘</span>Riwayat</button>
+  <button id="nav-setelan" onclick="app.tab('setelan')"><span class="ic">⚙️</span>Setelan</button>
+</nav>
+
+<!-- QR sheet -->
+<div class="scrim" id="scrim" onclick="app.closeSheets()"></div>
+<div class="sheet" id="qrSheet">
+  <div class="handle"></div>
+  <h3>QRIS Pembayaran</h3>
+  <div class="qr-card" id="qrCard">
+    <div class="store" id="qStore">Toko</div>
+    <div class="nmid" id="qNmid"></div>
+    <div class="amt" id="qAmt">Rp 0</div>
+    <div class="qrbox" id="qBox"></div>
+    <div class="scan">Scan dengan aplikasi pembayaran (GoPay, OVO, DANA, m-banking, dll)</div>
+    <div class="qr-brand">◆ QRIS · Satu QR untuk semua</div>
+  </div>
+  <button class="btn primary" onclick="app.cetakQrisPDF()">🧾 Cetak PDF QRIS</button>
+  <button class="btn soft" onclick="app.closeSheets()">Selesai</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- Penyimpanan ---------- */
+const DATA_KEY='qris:data';
+const store=(()=>{
+  const hasWS=typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function';
+  const mem={};
+  return {
+    async get(k){ if(hasWS){ try{ const r=await window.storage.get(k); return r?r.value:null; }catch(e){ return null; } } try{ return localStorage.getItem(k); }catch(e){ return (k in mem)?mem[k]:null; } },
+    async set(k,v){ if(hasWS){ try{ await window.storage.set(k,v); return; }catch(e){} } try{ localStorage.setItem(k,v); }catch(e){ mem[k]=v; } },
+    async load(){ const v=await this.get(DATA_KEY); return v?JSON.parse(v):null; },
+    async save(d){ await this.set(DATA_KEY, JSON.stringify(d)); }
+  };
+})();
+
+/* ---------- QRIS (port dari walletkeu qris.ts) ---------- */
+function parseTlv(payload){
+  const nodes=[]; let i=0;
+  while(i<payload.length){
+    const tag=payload.slice(i,i+2);
+    const len=parseInt(payload.slice(i+2,i+4),10);
+    if(Number.isNaN(len)) throw new Error('Payload QRIS tidak valid pada posisi '+i);
+    const value=payload.slice(i+4,i+4+len);
+    if(value.length!==len) throw new Error('Payload QRIS terpotong pada tag '+tag);
+    nodes.push({tag,value}); i+=4+len;
+  }
+  return nodes;
+}
+function serializeTlv(nodes){ return nodes.map(n=>n.tag+String(n.value.length).padStart(2,'0')+n.value).join(''); }
+function crc16ccitt(input){
+  let crc=0xffff;
+  for(let i=0;i<input.length;i++){ crc^=input.charCodeAt(i)<<8; for(let b=0;b<8;b++){ crc=crc&0x8000?((crc<<1)^0x1021)&0xffff:(crc<<1)&0xffff; } }
+  return crc.toString(16).toUpperCase().padStart(4,'0');
+}
+function isLikelyQrisPayload(p){ return /^000201/.test((p||'').trim())&&p.includes('5802ID'); }
+function buildDynamicQris(amount, staticPayload){
+  const src=(staticPayload||'').trim();
+  if(!isLikelyQrisPayload(src)) throw new Error('Kode bukan payload QRIS yang valid (harus diawali "000201").');
+  if(!Number.isFinite(amount)||amount<=0||!Number.isInteger(amount)) throw new Error('Nominal harus bilangan bulat positif.');
+  const nodes=parseTlv(src).filter(n=>n.tag!=='63');
+  const poi=nodes.find(n=>n.tag==='01');
+  if(poi) poi.value='12'; else { const idx=nodes.findIndex(n=>n.tag==='00')+1; nodes.splice(idx,0,{tag:'01',value:'12'}); }
+  const amountStr=String(amount);
+  const e54=nodes.find(n=>n.tag==='54');
+  if(e54) e54.value=amountStr; else {
+    let at=nodes.findIndex(n=>n.tag==='53'); if(at>=0) at+=1; else { at=nodes.findIndex(n=>n.tag==='58'); if(at<0) at=nodes.length; }
+    nodes.splice(at,0,{tag:'54',value:amountStr});
+  }
+  const withoutCrc=serializeTlv(nodes)+'6304';
+  return withoutCrc+crc16ccitt(withoutCrc);
+}
+// Info merchant untuk pratinjau
+function merchantInfo(payload){
+  try{ const n=parseTlv(payload); const name=(n.find(x=>x.tag==='59')||{}).value||''; const city=(n.find(x=>x.tag==='60')||{}).value||'';
+    let nmid='';
+    for(const tg of ['51','26','27','28']){ const t=n.find(x=>x.tag===tg); if(t){ try{ const sub=parseTlv(t.value); const id02=sub.find(s=>s.tag==='02'); if(id02){ nmid=id02.value; break; } }catch(e){} } }
+    return {name,city,nmid};
+  }catch(e){ return {name:'',city:'',nmid:''}; }
+}
+
+/* ---------- Util ---------- */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const rp=n=>'Rp '+(Math.round(n)||0).toLocaleString('id-ID');
+const HARI=24*60*60*1000, TTL=1*HARI;
+const jamSisa=ts=>Math.max(0,Math.ceil((TTL-(Date.now()-ts))/(60*60*1000)));
+
+/* ---------- Aplikasi ---------- */
+const app={
+  data:{storeName:'',basePayload:'',history:[]},
+  activeTab:'bayar',
+  amount:0,
+  lastPayload:'', lastAmount:0, lastDataUrl:'',
+
+  async init(){
+    const saved=await store.load();
+    if(saved) this.data={storeName:saved.storeName||'',basePayload:saved.basePayload||'',history:saved.history||[]};
+    this.purgeExpired();
+    this.buildKeypad();
+    document.getElementById('sStore').value=this.data.storeName;
+    this.render();
+  },
+  async persist(){ await store.save(this.data); },
+  purgeExpired(){ const now=Date.now(); const b=this.data.history.length; this.data.history=this.data.history.filter(h=>now-h.ts<=TTL); if(this.data.history.length!==b) this.persist(); },
+
+  render(){
+    this.purgeExpired();
+    document.getElementById('hStore').textContent='🏬 '+(this.data.storeName||'Belum ada nama toko');
+    const has=isLikelyQrisPayload(this.data.basePayload);
+    document.getElementById('noQrisNote').classList.toggle('hide',has);
+    document.getElementById('genBtn').disabled=!(has&&this.amount>0);
+    this.renderAmount(); this.renderRiwayat(); this.renderQrisStatus();
+  },
+
+  /* ---- Keypad ---- */
+  buildKeypad(){
+    const keys=['1','2','3','4','5','6','7','8','9','000','0','⌫'];
+    document.getElementById('keypad').innerHTML=keys.map(k=>`<button class="${(k==='000'||k==='⌫')?'act':''}" onclick="app.press('${k}')">${k}</button>`).join('');
+  },
+  press(k){
+    if(k==='⌫') this.amount=Math.floor(this.amount/10);
+    else if(k==='000') this.amount=this.amount*1000;
+    else this.amount=this.amount*10+parseInt(k,10);
+    if(this.amount>1e12) this.amount=1e12; // batas wajar
+    this.renderAmount();
+    document.getElementById('genBtn').disabled=!(isLikelyQrisPayload(this.data.basePayload)&&this.amount>0);
+  },
+  renderAmount(){ document.getElementById('amtDisp').innerHTML='<small>Rp</small>'+(this.amount||0).toLocaleString('id-ID'); },
+
+  /* ---- Generate ---- */
+  generate(){
+    if(!isLikelyQrisPayload(this.data.basePayload)){ this.toast('Unggah QRIS statis dulu'); this.tab('setelan'); return; }
+    if(this.amount<=0){ this.toast('Masukkan nominal'); return; }
+    let payload;
+    try{ payload=buildDynamicQris(this.amount, this.data.basePayload); }
+    catch(e){ this.toast(e.message||'Gagal membuat QRIS'); return; }
+    // catat transaksi
+    const tx={id:uid(),amount:this.amount,ts:Date.now(),payload};
+    this.data.history.push(tx); this.persist();
+    this.lastPayload=payload; this.lastAmount=this.amount;
+    this.showQr(payload, this.amount);
+    this.amount=0; this.renderAmount(); this.render();
+  },
+
+  // Render payload QR ke PNG dataURL (dipakai tampilan & PDF).
+  renderQrPng(payload, sizePx){
+    const qr=qrcode(0,'M'); qr.addData(payload); qr.make();
+    const count=qr.getModuleCount(), margin=4, total=count+margin*2;
+    const cell=Math.max(2,Math.floor((sizePx||460)/total)); const dim=cell*total;
+    const c=document.createElement('canvas'); c.width=dim; c.height=dim;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,dim,dim);
+    ctx.fillStyle='#000';
+    for(let r=0;r<count;r++) for(let col=0;col<count;col++) if(qr.isDark(r,col)) ctx.fillRect((col+margin)*cell,(r+margin)*cell,cell,cell);
+    return c.toDataURL('image/png');
+  },
+
+  showQr(payload, amount){
+    const info=merchantInfo(payload);
+    document.getElementById('qStore').textContent=this.data.storeName||info.name||'Toko';
+    document.getElementById('qNmid').textContent=[info.name&&this.data.storeName?info.name:'', info.nmid?'NMID '+info.nmid:''].filter(Boolean).join(' · ');
+    document.getElementById('qAmt').textContent=rp(amount);
+    const box=document.getElementById('qBox'); box.innerHTML='';
+    try{
+      this.lastDataUrl=this.renderQrPng(payload,460);
+      const img=new Image(); img.src=this.lastDataUrl; box.appendChild(img);
+    }catch(e){ this.toast('Gagal render QR'); }
+    this.showSheet('qrSheet');
+  },
+
+  /* ---- Riwayat ---- */
+  renderRiwayat(){
+    const el=document.getElementById('riwayatList');
+    const h=[...this.data.history].reverse();
+    document.getElementById('pdfLink').classList.toggle('hide',h.length===0);
+    if(h.length===0){ el.innerHTML=`<div class="empty"><div class="em">🕘</div><b>Belum ada transaksi</b>Buat QRIS dengan nominal di tab Bayar — otomatis tercatat di sini.</div>`; return; }
+    el.innerHTML=h.map(x=>{
+      const j=jamSisa(x.ts); const soon=j<2;
+      return `<div class="row" onclick="app.reopen('${x.id}')">
+        <div class="tag">🧾</div>
+        <div class="mid"><div class="nm">${rp(x.amount)}</div>
+          <div class="meta">${new Date(x.ts).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})} · <span class="pill ${soon?'soon':''}">⏳ ${soon?'<1 jam':j+' jam lagi'}</span></div></div>
+        <div class="amt">›</div>
+      </div>`;
+    }).join('');
+  },
+  reopen(id){ const x=this.data.history.find(t=>t.id===id); if(x) this.showQr(x.payload,x.amount); },
+
+  /* ---- Setelan ---- */
+  saveStore(v){ this.data.storeName=v.trim(); this.persist(); document.getElementById('hStore').textContent='🏬 '+(this.data.storeName||'Belum ada nama toko'); },
+  renderQrisStatus(){
+    const el=document.getElementById('qrisStatus');
+    if(isLikelyQrisPayload(this.data.basePayload)){
+      const info=merchantInfo(this.data.basePayload);
+      el.innerHTML=`<div class="info ok">✅ QRIS statis terpasang${info.name?' — <b>'+this.esc(info.name)+'</b>':''}${info.city?' ('+this.esc(info.city)+')':''}${info.nmid?'<br>NMID '+info.nmid:''}</div>`;
+    }else{
+      el.innerHTML=`<div class="info warn">Belum ada QRIS statis. Unggah gambar atau tempel kodenya di bawah.</div>`;
+    }
+  },
+  uploadImage(ev){
+    const file=ev.target.files[0]; if(!file) return;
+    this.toast('Membaca QRIS…');
+    const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const c=document.createElement('canvas'); const max=1000;
+      let w=img.width,h=img.height;
+      if(Math.max(w,h)>max){ const s=max/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+      c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      const data=ctx.getImageData(0,0,w,h);
+      const res=(typeof jsQR!=='undefined')?jsQR(data.data,w,h):null;
+      if(res&&res.data&&isLikelyQrisPayload(res.data)){ this.setBase(res.data); }
+      else if(res&&res.data){ this.toast('QR terbaca tapi bukan QRIS'); document.getElementById('sPayload').value=res.data; }
+      else this.toast('QR tidak terbaca — coba foto lebih jelas');
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); this.toast('Gagal memuat gambar'); };
+    img.src=url; ev.target.value='';
+  },
+  usePasted(){ const v=document.getElementById('sPayload').value.trim(); if(!isLikelyQrisPayload(v)){ this.toast('Kode tidak valid (harus diawali 000201)'); return; } this.setBase(v); },
+  setBase(payload){ this.data.basePayload=payload.trim(); this.persist(); this.render(); document.getElementById('sPayload').value=''; this.toast('QRIS statis tersimpan'); },
+
+  resetAll(){ if(!confirm('Hapus nama toko, QRIS statis, dan semua riwayat?')) return; this.data={storeName:'',basePayload:'',history:[]}; this.persist(); document.getElementById('sStore').value=''; document.getElementById('sPayload').value=''; this.render(); this.tab('bayar'); this.toast('Semua data dihapus'); },
+
+  /* ---- PDF: slip QRIS ---- */
+  cetakQrisPDF(){
+    const J=window.jspdf&&window.jspdf.jsPDF; if(!J){ this.toast('Gagal memuat PDF'); return; }
+    if(!this.lastDataUrl){ this.toast('QR belum siap'); return; }
+    const info=merchantInfo(this.lastPayload);
+    const doc=new J({orientation:'portrait',unit:'mm',format:'a4'});
+    const W=doc.internal.pageSize.getWidth();
+    const cx=W/2;
+    doc.setFillColor(79,70,229); doc.roundedRect(24,24,W-48,18,3,3,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(15);
+    doc.text(this.data.storeName||info.name||'QRIS Pembayaran', cx, 36, {align:'center'});
+    let y=58;
+    doc.setTextColor(60,52,120); doc.setFont('helvetica','normal'); doc.setFontSize(11);
+    if(info.name&&this.data.storeName){ doc.text(info.name, cx, y, {align:'center'}); y+=6; }
+    if(info.nmid){ doc.setFontSize(9); doc.setTextColor(120,120,140); doc.text('NMID '+info.nmid+(info.city?' · '+info.city:''), cx, y, {align:'center'}); y+=8; }
+    doc.setTextColor(55,48,163); doc.setFont('helvetica','bold'); doc.setFontSize(26);
+    doc.text(rp(this.lastAmount), cx, y+4, {align:'center'}); y+=16;
+    const qs=90; doc.addImage(this.lastDataUrl,'PNG',cx-qs/2,y,qs,qs); y+=qs+10;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90,90,110);
+    doc.text('Scan untuk membayar (GoPay, OVO, DANA, m-banking, dll)', cx, y, {align:'center'}); y+=6;
+    doc.setFontSize(9); doc.setTextColor(150,150,165);
+    doc.text('QRIS · '+new Date().toLocaleString('id-ID'), cx, y, {align:'center'});
+    doc.save('qris-'+this.lastAmount+'-'+new Date().toISOString().slice(0,10)+'.pdf');
+    this.toast('PDF QRIS dibuat');
+  },
+
+  /* ---- PDF: riwayat transaksi ---- */
+  cetakRiwayatPDF(){
+    const J=window.jspdf&&window.jspdf.jsPDF; if(!J){ this.toast('Gagal memuat PDF'); return; }
+    const h=[...this.data.history].reverse();
+    if(!h.length){ this.toast('Riwayat kosong'); return; }
+    const doc=new J({orientation:'portrait',unit:'mm',format:'a4'});
+    const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=16;
+    doc.setFillColor(79,70,229); doc.rect(0,0,W,24,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(15);
+    doc.text('Riwayat Transaksi QRIS', M, 12);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text(this.data.storeName||'', M, 19);
+    doc.text('Dicetak '+new Date().toLocaleString('id-ID'), W-M, 12, {align:'right'});
+    let y=34;
+    doc.setFillColor(238,237,246); doc.rect(M,y,W-2*M,8,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(80,74,140);
+    doc.text('No', M+2, y+5.4); doc.text('Waktu', M+16, y+5.4); doc.text('Nominal', W-M-2, y+5.4, {align:'right'});
+    y+=12; doc.setFont('helvetica','normal'); doc.setFontSize(9); let total=0;
+    h.forEach((x,i)=>{
+      if(y>H-22){ doc.addPage(); y=20; }
+      total+=x.amount;
+      doc.setTextColor(30,26,44);
+      doc.text(String(i+1), M+2, y);
+      doc.text(new Date(x.ts).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}), M+16, y);
+      doc.setTextColor(55,48,163); doc.text(rp(x.amount), W-M-2, y, {align:'right'});
+      y+=6.5;
+    });
+    doc.setDrawColor(210,208,225); doc.line(M,y,W-M,y); y+=7;
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(55,48,163);
+    doc.text(h.length+' transaksi', M, y);
+    doc.text('Total '+rp(total), W-M-2, y, {align:'right'});
+    doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(150,148,165);
+    doc.text('QRIS Generator · '+new Date().toLocaleDateString('id-ID'), M, H-10);
+    doc.save('qris-riwayat-'+new Date().toISOString().slice(0,10)+'.pdf');
+    this.toast('PDF riwayat dibuat');
+  },
+
+  /* ---- Tabs / sheet ---- */
+  tab(name){
+    this.activeTab=name;
+    ['bayar','riwayat','setelan'].forEach(n=>{
+      document.getElementById('tab-'+n).classList.toggle('hide',n!==name);
+      const nav=document.getElementById('nav-'+n); if(nav) nav.classList.toggle('on',n===name);
+    });
+    if(name==='riwayat') this.renderRiwayat();
+    if(name==='setelan') this.renderQrisStatus();
+  },
+  showSheet(id){ document.getElementById('scrim').classList.add('show'); document.getElementById(id).classList.add('show'); },
+  closeSheets(){ document.getElementById('scrim').classList.remove('show'); document.getElementById('qrSheet').classList.remove('show'); },
+
+  esc(s){ return (s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); },
+  toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(this._tt); this._tt=setTimeout(()=>t.classList.remove('show'),1900); }
+};
+
+app.init();
+</script>
+</body>
+</html>
